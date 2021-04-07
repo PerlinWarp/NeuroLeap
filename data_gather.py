@@ -60,7 +60,7 @@ def data_worker(shared_leap_arr=None, seconds=15, file_name="data_gather.csv"):
 	m.add_battery_handler(print_battery)
 
 	 # Its go time
-	m.set_leds([128, 128, 128], [128, 128, 128])
+	m.set_leds([0, 128, 0], [0, 128, 0])
 	# Vibrate to know we connected okay
 	m.vibrate(1)
 
