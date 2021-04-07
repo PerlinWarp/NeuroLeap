@@ -11,7 +11,7 @@ NUM_POINTS = 18
 MYO_DATA = True
 FINGER_PLOT = False
 # Skip first row as we dont care about columns
-all_points = np.loadtxt('thumb_data_30.csv', delimiter=',', skiprows=1)
+all_points = np.loadtxt('thumb_data_5.csv', delimiter=',', skiprows=1)
 if (MYO_DATA):
 	# Don't try and plot Myo channel data
 	all_points = all_points[:,8:]
@@ -37,10 +37,10 @@ def plot_simple(points):
 	Plot lines connecting the palms to the fingers, assuming thats the only data we get.
 	'''
 	# Get Palm Position
-	palm = points[:,5]
+	palm = points[:,0]
 	
 	# For Each of the 5 fingers
-	for n in range(0,5):
+	for n in range(1,6):
 		# Draw a line from the palm to the finger tips
 		tip = points[:,n]
 		top = plt3d.art3d.Line3D([palm[0], tip[0]], [palm[1], tip[1]], [palm[2], tip[2]])

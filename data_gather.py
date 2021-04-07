@@ -27,12 +27,21 @@ def data_worker(shared_leap_arr=None, seconds=15, file_name="data_gather.csv"):
 		hand = frame.hands.rightmost
 		if not hand.is_valid: return None
 		fingers = hand.fingers
-		X = [-1 * finger.stabilized_tip_position.x for finger in fingers]
-		X.append(-1 * hand.palm_position.x)
-		Y = [finger.stabilized_tip_position.y for finger in fingers]
+
+		X = []
+		Y = []
+		Z = []
+
+		# Add the position of the palms
+		X.append(-1 *hand.palm_position.x)
 		Y.append(hand.palm_position.y)
-		Z = [finger.stabilized_tip_position.z for finger in fingers]
 		Z.append(hand.palm_position.z)
+
+		for finger in fingers:
+			# Add finger tip positions
+			X.append(-1 * finger.stabilized_tip_position.x)
+			Y.append(finger.stabilized_tip_position.y)
+			Z.append(finger.stabilized_tip_position.z) 
 		return np.array([X, Z, Y])
 
 	# ------------ Myo Setup ---------------

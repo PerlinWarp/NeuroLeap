@@ -9,13 +9,13 @@ import mpl_toolkits.mplot3d as plt3d
 import data_gather as d
 
 NUM_POINTS = 18
-SECONDS = 30
+SECONDS = 5
 
 # -------- Main Program Loop -----------
 if __name__ == '__main__':
 	leap_arr = multiprocessing.Array('d', range(NUM_POINTS))
 
-	p = multiprocessing.Process(target=d.data_worker, args=(leap_arr, SECONDS, "thumb_data_30.csv"))
+	p = multiprocessing.Process(target=d.data_worker, args=(leap_arr, SECONDS, "thumb_data_5.csv"))
 	p.start()
 
 	# Matplotlib Setup
@@ -42,10 +42,10 @@ if __name__ == '__main__':
 		Plot lines connecting the palms to the fingers, assuming thats the only data we get.
 		'''
 		# Get Palm Position
-		palm = points[:,5]
+		palm = points[:,0]
 		
 		# For Each of the 5 fingers
-		for n in range(0,5):
+		for n in range(1,6):
 			# Draw a line from the palm to the finger tips
 			tip = points[:,n]
 			top = plt3d.art3d.Line3D([palm[0], tip[0]], [palm[1], tip[1]], [palm[2], tip[2]])
