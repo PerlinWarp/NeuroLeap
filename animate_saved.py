@@ -27,8 +27,7 @@ ax.view_init(elev=45., azim=122)
 
 points_ = np.zeros((3, NUM_POINTS))
 sizes = [10]*(NUM_POINTS//3)
-sizes[0] = 40
-sizes[1] = 50
+sizes[0] = 30
 patches = ax.scatter(points_[0], points_[1], points_[2], s=sizes, alpha=1)
 
 def plot_points(points):

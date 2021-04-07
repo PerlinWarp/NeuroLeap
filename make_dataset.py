@@ -9,7 +9,7 @@ import mpl_toolkits.mplot3d as plt3d
 import data_gather as d
 
 NUM_POINTS = 18
-SECONDS = 5
+SECONDS = 30
 
 # -------- Main Program Loop -----------
 if __name__ == '__main__':
