@@ -26,7 +26,10 @@ ax = fig.add_subplot(111, projection='3d', xlim=(-300, 400), ylim=(-200, 400), z
 ax.view_init(elev=45., azim=122)
 
 points_ = np.zeros((3, NUM_POINTS))
-patches = ax.scatter(points_[0], points_[1], points_[2], s=[30]*NUM_POINTS, alpha=1)
+sizes = [10]*(NUM_POINTS//3)
+sizes[0] = 40
+sizes[1] = 50
+patches = ax.scatter(points_[0], points_[1], points_[2], s=sizes, alpha=1)
 
 def plot_points(points):
 	patches.set_offsets(points[:2].T)
@@ -113,7 +116,7 @@ def animate(i):
 
 	frame_points = all_points[i % len(all_points)]
 	frame_points = frame_points.reshape((3, NUM_POINTS//3))
-	patches = ax.scatter(frame_points[0], frame_points[1], frame_points[2], s=[10]*NUM_POINTS, alpha=1)
+	patches = ax.scatter(frame_points[0], frame_points[1], frame_points[2], s=sizes, alpha=1)
 	plot_points(frame_points)
 	if (FINGER_PLOT):
 		plot_simple(frame_points)

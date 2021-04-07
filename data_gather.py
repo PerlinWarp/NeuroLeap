@@ -99,11 +99,12 @@ def data_worker(shared_leap_arr=None, seconds=15, file_name="data_gather.csv"):
 			# Combine the data and record to a df
 			myo_cols = ["Channel_1", "Channel_2", "Channel_3", "Channel_4", "Channel_5", "Channel_6", "Channel_7", "Channel_8"]
 			leap_cols = []
-			finger_names = ['Thumb', 'Index', 'Middle', 'Ring', 'Pinky', 'Palm']
+			finger_names = ['Palm', 'Thumb', 'Index', 'Middle', 'Ring', 'Pinky']
 			# We can of course generate column names on the fly:
-			for finger in finger_names:
-				for dim in ["x","y","z"]:
-						leap_cols.append(f"{finger}_tip_{dim}")
+			# Note the ordering being different to the order we pack them in. 
+			for dim in ["x","y","z"]:
+				for finger in finger_names:
+					leap_cols.append(f"{finger}_tip_{dim}")
 
 			myo_df = pd.DataFrame(myo_data, columns=myo_cols)
 			leap_df = pd.DataFrame(leap_data, columns=leap_cols)
