@@ -9,13 +9,13 @@ import mpl_toolkits.mplot3d as plt3d
 import data_gather as d
 
 NUM_POINTS = 18
-SECONDS = 5
+SECONDS = 30
 
 # -------- Main Program Loop -----------
 if __name__ == '__main__':
 	leap_arr = multiprocessing.Array('d', range(NUM_POINTS))
 
-	p = multiprocessing.Process(target=d.data_worker, args=(leap_arr, SECONDS, "thumb_data_5.csv"))
+	p = multiprocessing.Process(target=d.data_worker, args=(leap_arr, SECONDS, "thumb_dataset_30.csv"))
 	p.start()
 
 	# Matplotlib Setup

@@ -11,7 +11,7 @@ NUM_POINTS = 18
 MYO_DATA = True
 FINGER_PLOT = False
 # Skip first row as we dont care about columns
-all_points = np.loadtxt('thumb_data_5.csv', delimiter=',', skiprows=1)
+all_points = np.loadtxt('thumb_dataset_30.csv', delimiter=',', skiprows=1)
 if (MYO_DATA):
 	# Don't try and plot Myo channel data
 	all_points = all_points[:,8:]
