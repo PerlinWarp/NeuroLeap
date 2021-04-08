@@ -115,6 +115,7 @@ def animate(i):
 
 	frame_points = all_points[i % len(all_points)]
 	frame_points = frame_points.reshape((3, NUM_POINTS//3))
+	
 	patches = ax.scatter(frame_points[0], frame_points[1], frame_points[2], s=sizes, alpha=1)
 	plot_points(frame_points)
 	if (FINGER_PLOT):
