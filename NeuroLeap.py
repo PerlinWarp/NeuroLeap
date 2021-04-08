@@ -5,6 +5,30 @@ from mpl_toolkits.mplot3d import Axes3D
 import mpl_toolkits.mplot3d as plt3d
 
 # Leap Motion Hand Animation
+
+def get_points(controller):
+	frame = controller.frame()
+	hand = frame.hands.rightmost
+	if not hand.is_valid: return None
+	fingers = hand.fingers
+
+	X = []
+	Y = []
+	Z = []
+
+	# Add the position of the palms
+	X.append(-1 *hand.palm_position.x)
+	Y.append(hand.palm_position.y)
+	Z.append(hand.palm_position.z)
+
+	for finger in fingers:
+		# Add finger tip positions
+		X.append(-1 * finger.stabilized_tip_position.x)
+		Y.append(finger.stabilized_tip_position.y)
+		Z.append(finger.stabilized_tip_position.z) 
+	return np.array([X, Z, Y])
+
+
 def plot_points(points, scatter):
 	scatter.set_offsets(points[:2].T)
 	scatter.set_3d_properties(points[2], zdir='z')
@@ -59,5 +83,9 @@ def get_myodata_arr(myo, shared_arr):
 
 	# Wait to start
 	# m.connect will wait until we get a connection, but the leap doesnt block
-	while (True):
-			myo.run(1)
+	try:
+		while (True):
+				myo.run(1)
+	except KeyboardInterrupt:
+		print("Quitting Myo worker")
+		quit()

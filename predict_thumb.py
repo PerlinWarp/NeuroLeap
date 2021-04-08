@@ -6,17 +6,25 @@ import matplotlib.pyplot as plt
 from matplotlib import animation
 from mpl_toolkits.mplot3d import Axes3D
 import mpl_toolkits.mplot3d as plt3d
+from keras.models import load_model
 
 from myo_raw import MyoRaw
 import NeuroLeap as nl
 
-def predict_thumb(emg):
+def predict_thumb(emg, model):
 	pred =  np.array([ 51.149292 ,  -7.4921813, 127.01072  ], dtype='float32')
 	pred = np.random.rand(1,3) * 200
+
+	emg = emg.reshape(1,8)
+	pred = model.predict(emg)
+
 	return pred[0]
 
 # -------- Main Program Loop -----------
 if __name__ == '__main__':
+	# Load the keras model
+	model = load_model('BenchmarkNN.h5')
+
 	m = MyoRaw(raw=False, filtered=True) # 50Hz Filtered Myo data
 	m.connect()
 
@@ -24,9 +32,6 @@ if __name__ == '__main__':
 	myo_arr = multiprocessing.Array('d', range(8))
 	p = multiprocessing.Process(target=nl.get_myodata_arr, args=(m, myo_arr,))
 	p.start()
-
-	# Load the keras model
-	#model = load_model('BenchmarkNN.h5')
 
 	# Matplotlib Setup
 	print("Matplot Setup")
@@ -39,7 +44,7 @@ if __name__ == '__main__':
 		myo_data = np.frombuffer(myo_arr.get_obj())
 
 		# Use input to generate predictions
-		thumb_pred = predict_thumb(myo_data)
+		thumb_pred = predict_thumb(myo_data, model)
 		# As we are only predicting the thumb, I am using a real data to help see if the thumb prediction is bad
 		pred = np.array([
 		    [-13.35151005, thumb_pred[0],17.06526566, -9.59082985, -31.23623848, -53.12862396],
@@ -50,7 +55,7 @@ if __name__ == '__main__':
 		
 	def animate(i):
 		if (p.is_alive()):
-			cpoints = predict_points(None)
+			cpoints = predict_points(model)
 		else:
 			print("Data gatherer has exited")
 			quit()
