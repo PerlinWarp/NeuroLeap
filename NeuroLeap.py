@@ -55,11 +55,11 @@ def reset_plot(ax):
 	# Reset the plot
 	ax.cla()
 	# Really you can just update the lines to avoid this
-	ax.set_xlim3d([-300, 300])
+	ax.set_xlim3d([-200, 200])
 	ax.set_xlabel('X [mm]')
-	ax.set_ylim3d([-200, 400])
+	ax.set_ylim3d([-200, 200])
 	ax.set_ylabel('Y [mm]')
-	ax.set_zlim3d([-300, 300])
+	ax.set_zlim3d([-200, 200])
 	ax.set_zlabel('Z [mm]')
 
 # Myo Multiprocessing functions

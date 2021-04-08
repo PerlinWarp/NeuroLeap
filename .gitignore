@@ -1,2 +1,4 @@
 __pycache__/*
 *.csv
+Notebooks/.ipynb_checkpoints/*
+Notebooks/Archive/.ipynb_checkpoints/*
