@@ -19,4 +19,11 @@ mean_absolute_error: 0.1714 - [2-RelThumbAnalysis.ipynb](../Notebooks/2-RelThumb
 Above is a model, trained to predict the thumb position relative to the model of the palm. 
 The input and output variables of this model were also MinMax scaled, which reduced the mean_absolute_error from over 38 to under 0.18, this helped the network a lot. The same 4 layer architecture was used in this model as above.     
 
-
+### 9th of April 15:50  
+mean_absolute_error: 0.1288 - [3-SixtySecondsOfThumbData.ipynb](../Notebooks/3-SixtySecondsOfThumbData.ipynb)  
+  
+![SlighlyBetterThumbModel](media/3BiggieSmallsThumb.gif)
+  
+Moving from 30 seconds of training data to 60 seconds gives better results.  
+The model knows when I stretch my thumb but fails to understand the direction I am pointing my thumb.  
+  
