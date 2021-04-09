@@ -51,6 +51,10 @@ def data_worker(shared_leap_arr=None, seconds=15, file_name="data_gather.csv"):
 	myo_data = []
 
 	def add_to_queue(emg, movement):
+		'''
+		Add myo data to myo_data, 
+		add leap data to leap_data and shared_leap_arr for plots in other thread
+		'''
 		myo_data.append(emg)
 		points = get_points()
 		if (points is not None):

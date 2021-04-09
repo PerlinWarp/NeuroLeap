@@ -450,6 +450,9 @@ class MyoRaw(object):
         However this seems to use a data rate of 50Hz. 
         '''
 
+        # Stop Myo Disconnecting after 30 seconds by setting sleepmode
+        self.sleep_mode(1)
+
         self.write_attr(0x28, b'\x01\x00')
         self.write_attr(0x19, b'\x01\x03\x01\x01\x00')
         

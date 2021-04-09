@@ -17,6 +17,6 @@ mean_absolute_error: 0.1714 - [2-RelThumbAnalysis.ipynb](../Notebooks/2-RelThumb
 ![A Just Bad Thumb Model](media/FirstRelThumbModel.gif)
   
 Above is a model, trained to predict the thumb position relative to the model of the palm. 
-The input and output variables of this model were also MinMax scaled, which reduced the mean_absolute_error from over 38 to under 0.18, this helped the network a lot.  
+The input and output variables of this model were also MinMax scaled, which reduced the mean_absolute_error from over 38 to under 0.18, this helped the network a lot. The same 4 layer architecture was used in this model as above.     
 
 
