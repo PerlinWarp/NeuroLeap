@@ -26,4 +26,14 @@ mean_absolute_error: 0.1288 - [3-SixtySecondsOfThumbData.ipynb](../Notebooks/3-S
   
 Moving from 30 seconds of training data to 60 seconds gives better results.  
 The model knows when I stretch my thumb but fails to understand the direction I am pointing my thumb.  
+
+### 9th of April 22:12
   
+mean_absolute_error: 0.1273 - [4-FourMinutesOfThumbDataSeq+RNN.ipynb](../Notebooks/4-FourMinutesOfThumbDataSeq+RNN.ipynb) 
+  
+I collected 4 minutes of data using an RNN, the best validation mae I got was 0.1273 using an RNN.  
+For comparison 0.1339 was the best mae achieved using a normal fully connected network. 
+The validation data chosen was the first 500 ~ 10 seconds of data, so to not validate using data that was gathered while I was fatigued.   
+
+
+

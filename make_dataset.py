@@ -9,14 +9,18 @@ import mpl_toolkits.mplot3d as plt3d
 import data_gather as d
 import NeuroLeap as nl
 
+# Configs
 NUM_POINTS = 18
-SECONDS = 60
+SECONDS = 60*4
+RAW = False
+CSV_NAME = "thumb_dataset"
+csv_name = f"data/{CSV_NAME}-{SECONDS}-raw-{RAW}.csv"
 
 # -------- Main Program Loop -----------
 if __name__ == '__main__':
 	leap_arr = multiprocessing.Array('d', range(NUM_POINTS))
 
-	p = multiprocessing.Process(target=d.data_worker, args=(leap_arr, SECONDS, "thumb_dataset_60.csv"))
+	p = multiprocessing.Process(target=d.data_worker, args=(leap_arr, SECONDS, csv_name, RAW))
 	p.start()
 
 	# Matplotlib Setup

@@ -15,7 +15,7 @@ import Leap
 from myo_raw import MyoRaw
 import NeuroLeap as nl
 
-def data_worker(shared_leap_arr=None, seconds=15, file_name="data_gather.csv"):
+def data_worker(shared_leap_arr=None, seconds=15, file_name="data_gather.csv", raw=False):
 	collect = False
 
 	# ------------ Leap Setup ---------------
@@ -25,7 +25,10 @@ def data_worker(shared_leap_arr=None, seconds=15, file_name="data_gather.csv"):
 	controller.set_policy_flags(Leap.Controller.POLICY_BACKGROUND_FRAMES)
 
 	# ------------ Myo Setup ---------------
-	m = MyoRaw(raw=False, filtered=True) # 50Hz Filtered Myo data
+	if (raw):
+		m = MyoRaw(raw=True, filtered=False) # 200Hz Non-Filtered Myo data
+	else:
+		m = MyoRaw(raw=False, filtered=True) # 50Hz Filtered Myo data
 	m.connect()
 
 	myo_data = []
@@ -95,6 +98,7 @@ def data_worker(shared_leap_arr=None, seconds=15, file_name="data_gather.csv"):
 
 			df = myo_df.join(leap_df)
 			df.to_csv(file_name, index=False)
+			print("CSV Saved", file_name)
 
 # -------- Main Program Loop -----------
 if __name__ == '__main__':
