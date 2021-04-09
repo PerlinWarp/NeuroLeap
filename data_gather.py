@@ -10,8 +10,10 @@ import multiprocessing
 
 import numpy as np
 import pandas as pd
+
 import Leap
 from myo_raw import MyoRaw
+import NeuroLeap as nl
 
 def data_worker(shared_leap_arr=None, seconds=15, file_name="data_gather.csv"):
 	collect = False
@@ -21,28 +23,6 @@ def data_worker(shared_leap_arr=None, seconds=15, file_name="data_gather.csv"):
 
 	controller = Leap.Controller()
 	controller.set_policy_flags(Leap.Controller.POLICY_BACKGROUND_FRAMES)
-
-	def get_points():
-		frame = controller.frame()
-		hand = frame.hands.rightmost
-		if not hand.is_valid: return None
-		fingers = hand.fingers
-
-		X = []
-		Y = []
-		Z = []
-
-		# Add the position of the palms
-		X.append(-1 *hand.palm_position.x)
-		Y.append(hand.palm_position.y)
-		Z.append(hand.palm_position.z)
-
-		for finger in fingers:
-			# Add finger tip positions
-			X.append(-1 * finger.stabilized_tip_position.x)
-			Y.append(finger.stabilized_tip_position.y)
-			Z.append(finger.stabilized_tip_position.z) 
-		return np.array([X, Z, Y])
 
 	# ------------ Myo Setup ---------------
 	m = MyoRaw(raw=False, filtered=True) # 50Hz Filtered Myo data
@@ -56,9 +36,9 @@ def data_worker(shared_leap_arr=None, seconds=15, file_name="data_gather.csv"):
 		add leap data to leap_data and shared_leap_arr for plots in other thread
 		'''
 		myo_data.append(emg)
-		points = get_points()
+		points = nl.get_points(controller)
 		if (points is not None):
-			ld = get_points().flatten()
+			ld = points.flatten()
 			leap_data.append(ld)
 			if (shared_leap_arr != None):
 				# Move leap data into shared array for plotting

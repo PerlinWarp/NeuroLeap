@@ -23,6 +23,28 @@ def get_points(controller):
 
 	for finger in fingers:
 		# Add finger tip positions
+		X.append(-1 * finger.tip_position.x)
+		Y.append(finger.tip_position.y)
+		Z.append(finger.tip_position.z) 
+	return np.array([X, Z, Y])
+
+def get_stable_points(controller):
+	frame = controller.frame()
+	hand = frame.hands.rightmost
+	if not hand.is_valid: return None
+	fingers = hand.fingers
+
+	X = []
+	Y = []
+	Z = []
+
+	# Add the position of the palms
+	X.append(-1 *hand.palm_position.x)
+	Y.append(hand.palm_position.y)
+	Z.append(hand.palm_position.z)
+
+	for finger in fingers:
+		# Add finger tip positions
 		X.append(-1 * finger.stabilized_tip_position.x)
 		Y.append(finger.stabilized_tip_position.y)
 		Z.append(finger.stabilized_tip_position.z) 
@@ -57,9 +79,9 @@ def reset_plot(ax):
 	# Really you can just update the lines to avoid this
 	ax.set_xlim3d([-200, 200])
 	ax.set_xlabel('X [mm]')
-	ax.set_ylim3d([-200, 200])
+	ax.set_ylim3d([-200, 150])
 	ax.set_ylabel('Y [mm]')
-	ax.set_zlim3d([-200, 200])
+	ax.set_zlim3d([-100, 300])
 	ax.set_zlabel('Z [mm]')
 
 # Plotting the whole hand
