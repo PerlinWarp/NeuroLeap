@@ -1,4 +1,4 @@
-# Dual Myo Speedtest
+# Gather data from 2 seperate Myos
 import time
 import multiprocessing
 
@@ -54,16 +54,12 @@ p.start()
 
 # Now both are connected we can start the speedtest.
 start_time = time.time()
-last_n_1 = start_time
-last_n_2 = start_time
 
-n_points = 50
+myo_blue_data = []
+myo_raw_data = []
 
-myo1_data = []
-myo2_data = []
-
-myo1_freq = []
-myo2_freq = []
+myo_blue_started = False
+myo_raw_started = False
 
 # -------- Main Program Loop -----------
 # Get data from Myos
@@ -79,6 +75,8 @@ try:
 	while ( (not b_q.empty()) or (not q.empty()) ):
 		if ((not q.empty())): q.get()
 		if (not b_q.empty()): b_q.get()
+		
+	# Both devices should now be reporting data, and be empty 
 
 	while True:
 		# Get data from the first Myo
@@ -86,62 +84,21 @@ try:
 			# Get the new data from the Myo queue
 			emg = list(b_q.get())
 			#print('Myo 1', emg)
-			myo1_data.append(emg)
-
-			data_points = len(myo1_data)
-			if (data_points % n_points == 0):
-				time_s = time.time()
-				print(f"{data_points} points, {n_points} in {time_s-last_n_1}")
-				freq = n_points/(time_s-last_n_1)
-				print(f"Giving BlueMyo a frequency of {freq} Hz")
-				last_n_1 = time.time()
-				myo1_freq.append(freq)
+			myo_blue_data.append(emg)
 
 		# Get data from the second Myo
 		while not(q.empty()):
 			# Get the new data from the Myo queue
 			emg = list(q.get())
 			#print('Myo 2', emg)
-			myo2_data.append(emg)
-
-			data_points = len(myo2_data)
-			if (data_points % n_points == 0):
-				time_s = time.time()
-				print(f"{data_points} points, {n_points} in {time_s-last_n_2}")
-				freq = n_points/(time_s-last_n_2)
-				print(f"Giving MyoRaw a frequency of {freq} Hz")
-				last_n_2 = time.time()
-				myo2_freq.append(freq)
-
-
+			myo_raw_data.append(emg)
 
 except KeyboardInterrupt:
-	print("Quitting")
+	end_time = time.time()
+	print(f"Quitting, after {end_time} seconds.")
 	m.set_leds([50, 255, 128], [50, 255, 128])
 	m.disconnect()
 
-	end_time = time.time()
-	print(f"{len(myo1_data)} measurements in {end_time-start_time} seconds.")
-	freq = len(myo1_data)/(end_time-start_time)
-	print(f"Giving BlueMyo a frequency of {freq} Hz")
-
-	print(f"{len(myo2_data)} measurements in {end_time-start_time} seconds.")
-	freq = len(myo2_data)/(end_time-start_time)
-	print(f"Giving MyoRaw a frequency of {freq} Hz")
-
-	if (PLOT):
-		import numpy as np
-		import matplotlib.pyplot as plt
-		x_ticks = np.array(range(1, len(myo1_freq)+1)) * n_points
-
-		# Due to syncing, we know the first freq will be incorrect
-		myo1_freq.pop(0)
-		myo1_freq.pop(1)
-
-		plt.plot(myo1_freq, label="Blue Myo Freq")
-		plt.plot(myo2_freq, label = 'Myo Raw Freq')
-		plt.legend()
-		plt.title("Myo Frequency Plot")
-		plt.xlabel(f"Number of values sent, measured every {n_points}")
-		plt.ylabel('Frequency')
-		plt.show()
+	print('Saving')
+	print(f"Blue Myo {len(myo_blue_data)}")
+	print(f"Raw Myo {len(myo_raw_data)}")

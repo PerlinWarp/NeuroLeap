@@ -220,7 +220,11 @@ class MyoRaw(object):
     def run(self, timeout=None):
         self.bt.recv_packet(timeout)
 
-    def connect(self):
+    def connect(self, addr=None):
+        '''
+        Connect to a Myo
+        Addr is the MAC address in format: [93, 41, 55, 245, 82, 194]
+        '''
         # stop everything from before
         self.bt.end_scan()
         self.bt.disconnect(0)
@@ -228,17 +232,17 @@ class MyoRaw(object):
         self.bt.disconnect(2)
 
         # start scanning
-        print('scanning...')
-        self.bt.discover()
-        while True:
-            p = self.bt.recv_packet()
-            print('scan response:', p)
+        if (addr is None):
+            print('scanning...')
+            self.bt.discover()
+            while True:
+                p = self.bt.recv_packet()
+                print('scan response:', p)
 
-            if p.payload.endswith(b'\x06\x42\x48\x12\x4A\x7F\x2C\x48\x47\xB9\xDE\x04\xA9\x01\x00\x06\xD5'):
-                addr = list(multiord(p.payload[2:8]))
-                break
-        self.bt.end_scan()
-
+                if p.payload.endswith(b'\x06\x42\x48\x12\x4A\x7F\x2C\x48\x47\xB9\xDE\x04\xA9\x01\x00\x06\xD5'):
+                    addr = list(multiord(p.payload[2:8]))
+                    break
+            self.bt.end_scan()
         # connect and wait for status event
         conn_pkt = self.bt.connect(addr)
         self.conn = multiord(conn_pkt.payload)[-1]
