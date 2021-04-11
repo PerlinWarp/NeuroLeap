@@ -55,6 +55,12 @@ def myo_worker(q, mac_addr = 'c2:19:f0:35:28:5d'):
 
 	while True:
 		try:
+			'''
+			Blocks until a notification is received from the peripheral, or until the given timeout (in seconds) 
+			has elapsed. If a notification is received, the delegate object’s handleNotification() method will be called, and waitForNotifications() will then return True.
+			If nothing is received before the timeout elapses, this will return False.
+			'''
+
 			if p.waitForNotifications(1.0):
 				continue
 			print("waiting...")
