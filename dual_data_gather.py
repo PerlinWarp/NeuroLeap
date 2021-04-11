@@ -2,9 +2,12 @@
 import time
 import multiprocessing
 
+import pandas as pd
+
 import blue_myo
 from myo_raw import MyoRaw
 
+file_name = "dual_emg.csv"
 PLOT = True
 
 # For BlueMyo
@@ -75,7 +78,7 @@ try:
 	while ( (not b_q.empty()) or (not q.empty()) ):
 		if ((not q.empty())): q.get()
 		if (not b_q.empty()): b_q.get()
-		
+
 	# Both devices should now be reporting data, and be empty 
 
 	while True:
@@ -96,9 +99,19 @@ try:
 except KeyboardInterrupt:
 	end_time = time.time()
 	print(f"Quitting, after {end_time} seconds.")
-	m.set_leds([50, 255, 128], [50, 255, 128])
+	m.set_leds([255, 0, 64], [255, 0, 64])
 	m.disconnect()
 
 	print('Saving')
 	print(f"Blue Myo {len(myo_blue_data)}")
 	print(f"Raw Myo {len(myo_raw_data)}")
+
+	myo1_cols = ["Channel_1", "Channel_2", "Channel_3", "Channel_4", "Channel_5", "Channel_6", "Channel_7", "Channel_8"]
+	myo2_cols = ["Channel_9", "Channel_10", "Channel_11", "Channel_12", "Channel_13", "Channel_14", "Channel_15", "Channel_16"]
+
+	myo1_df = pd.DataFrame(myo_blue_data, columns=myo1_cols)
+	myo2_df = pd.DataFrame(myo_raw_data, columns=myo2_cols)
+
+	df = myo1_df.join(myo2_df)
+	df.to_csv(file_name, index=False)
+	print("CSV Saved", file_name)
