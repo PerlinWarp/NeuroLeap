@@ -1,6 +1,7 @@
 # Alternate BluePy Myo
 import struct
 import multiprocessing
+import time
 
 from bluepy import btle
 
@@ -16,9 +17,19 @@ class Handle:
 	EMG3 = 0x34
 
 class Connection(btle.Peripheral):
-	def __init__(self, mac):
-		btle.Peripheral.__init__(self, mac)	
+	def __init__(self, mac, mode=0):
+		btle.Peripheral.__init__(self, mac)
 
+		self.writeCharacteristic(0x2c, b'\x01\x00')  # Suscribe to EmgData0Characteristic
+		self.writeCharacteristic(0x2f, b'\x01\x00')  # Suscribe to EmgData1Characteristic
+		self.writeCharacteristic(0x32, b'\x01\x00')  # Suscribe to EmgData2Characteristic
+		self.writeCharacteristic(0x35, b'\x01\x00')  # Suscribe to EmgData3Characteristic
+
+		# struct.pack('<5B', 1, 3, emg_mode, imu_mode, classifier_mode)
+		self.writeCharacteristic(0x19, b'\x01\x03\x03\x00\x00')
+
+	def subscribe_to_filtered(self):
+		# 50Hz EMG Rectified, bandpass filtered, 0x01
 		# Subscribe to EMG Channels
 		self.writeCharacteristic(0x28, struct.pack('<bb', 0x01, 0x00),True)
 		self.writeCharacteristic(0x19, struct.pack('<bbbbb', 1,1,1,3,1) ,True )
@@ -26,11 +37,31 @@ class Connection(btle.Peripheral):
 		# Tell the Myo not to sleep, otherwise it disconnects after 30
 		self.writeCharacteristic(0x19, struct.pack('<3B', 9, 1, 1), True)
 
+	def subscribe_to_raw(self):
+
+		# enable IMU data
+		#self.writeCharacteristic(0x1d, b'\x01\x00')
+		# enable on/off arm notifications
+		#self.writeCharacteristic(0x24, b'\x02\x00')
+
+		# Subscribe to 200Hz EMG
+		self.writeCharacteristic(Handle.EMG0, b'\x01\x00')
+		self.writeCharacteristic(Handle.EMG1, b'\x01\x00')
+		self.writeCharacteristic(Handle.EMG2, b'\x01\x00')
+		self.writeCharacteristic(Handle.EMG3, b'\x01\x00')
+		self.writeCharacteristic(0x19, struct.pack('<5B', 1,3,1,1,1) ,True )
+		print("BlueMyo - 200Hz Raw")
+
+		# enable battery notifications
+		self.writeCharacteristic(0x12, b'\x01\x10')
+
+
 	def vibrate(self, length):
 		self.writeCharacteristic(0x19, struct.pack('<bbb', 0x03, 0x01, length),True)
 
 	def set_leds(self, logo, line):
 		self.writeCharacteristic(0x19, struct.pack('<8B', 6, 6, *(logo + line)))
+
 
 class MyoDelegate(btle.DefaultDelegate):
 	def __init__(self, q):
@@ -43,9 +74,18 @@ class MyoDelegate(btle.DefaultDelegate):
 			# Add EMG data to the Queue
 			self.q.put(data)
 
+		elif(cHandle in (Handle.EMG0, Handle.EMG1, Handle.EMG2, Handle.EMG3)):
+			emg1 = struct.unpack('<8b', data[:8])
+			emg2 = struct.unpack('<8b', data[8:])
+			# We get two sequential readings. 
+			self.q.put(emg1)
+			self.q.put(emg2)
+
 def myo_worker(q, mac_addr = 'c2:19:f0:35:28:5d'):
 	p = Connection(mac_addr)
 	p.setDelegate(MyoDelegate(q))
+
+	print("Connected")
 
 	p.vibrate(1)
 	p.vibrate(1)
