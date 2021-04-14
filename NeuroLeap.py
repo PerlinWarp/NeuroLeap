@@ -147,6 +147,14 @@ def plot_bone_lines(points, ax):
 								  [wrist[2], mcps[0][2]])
 	ax.add_line(line)
 
+	# Connext the left hand side of the index finger to the thumb.
+	thumb_mcp = points[:,1+2]
+	pinky_mcp = points[:,4+2]
+	line = plt3d.art3d.Line3D([thumb_mcp[0], pinky_mcp[0]],
+								  [thumb_mcp[1], pinky_mcp[1]],
+								  [thumb_mcp[2], pinky_mcp[2]])
+	ax.add_line(line)
+
 def get_bone_points(controller):
 	'''
 	Gets points for a full hand model. (22 points, 66 vars)
