@@ -15,7 +15,7 @@ import Leap
 from myo_raw import MyoRaw
 import NeuroLeap as nl
 
-def data_worker(shared_leap_arr=None, seconds=15, file_name="data_gather.csv", raw=False):
+def data_worker(shared_leap_arr=None, seconds=15, file_name="data_gather.csv", raw=False, full_hand=False):
 	collect = False
 
 	# ------------ Leap Setup ---------------
@@ -39,7 +39,10 @@ def data_worker(shared_leap_arr=None, seconds=15, file_name="data_gather.csv", r
 		add leap data to leap_data and shared_leap_arr for plots in other thread
 		'''
 		myo_data.append(emg)
-		points = nl.get_points(controller)
+		if (full_hand):
+			points = nl.get_bone_points(controller)
+		else:
+			points = nl.get_points(controller)
 		if (points is not None):
 			ld = points.flatten()
 			leap_data.append(ld)
@@ -84,19 +87,10 @@ def data_worker(shared_leap_arr=None, seconds=15, file_name="data_gather.csv", r
 			print(len(leap_data), "leaps collected")
 
 			# Combine the data and record to a df
-			myo_cols = ["Channel_1", "Channel_2", "Channel_3", "Channel_4", "Channel_5", "Channel_6", "Channel_7", "Channel_8"]
-			leap_cols = []
-			finger_names = ['Palm', 'Thumb', 'Index', 'Middle', 'Ring', 'Pinky']
-			# We can of course generate column names on the fly:
-			# Note the ordering being different to the order we pack them in. 
-			for dim in ["x","y","z"]:
-				for finger in finger_names:
-					leap_cols.append(f"{finger}_tip_{dim}")
-
-			myo_df = pd.DataFrame(myo_data, columns=myo_cols)
-			leap_df = pd.DataFrame(leap_data, columns=leap_cols)
-
-			df = myo_df.join(leap_df)
+			if (full_hand == False):
+				df = nl.data_to_simple_df(myo_data, leap_data)
+			else:
+				df = nl.data_to_bones_df(myo_data, leap_data)
 			df.to_csv(file_name, index=False)
 			print("CSV Saved", file_name)
 

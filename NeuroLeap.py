@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 from matplotlib import animation
 from mpl_toolkits.mplot3d import Axes3D
 import mpl_toolkits.mplot3d as plt3d
@@ -7,6 +8,10 @@ import mpl_toolkits.mplot3d as plt3d
 # Leap Motion Hand Animation
 
 def get_points(controller):
+	'''
+	Returns points for a simple hand model.
+	18 point model. Finger tips + Palm
+	'''
 	frame = controller.frame()
 	hand = frame.hands.rightmost
 	if not hand.is_valid: return None
@@ -25,10 +30,15 @@ def get_points(controller):
 		# Add finger tip positions
 		X.append(-1 * finger.tip_position.x)
 		Y.append(finger.tip_position.y)
-		Z.append(finger.tip_position.z) 
+		Z.append(finger.tip_position.z)
 	return np.array([X, Z, Y])
 
 def get_stable_points(controller):
+	'''
+	Returns points for a simple hand model.
+	18 point model. Finger tips + Palm
+	Uses stabalized positions, not reccomended for ML.
+	'''
 	frame = controller.frame()
 	hand = frame.hands.rightmost
 	if not hand.is_valid: return None
@@ -47,7 +57,7 @@ def get_stable_points(controller):
 		# Add finger tip positions
 		X.append(-1 * finger.stabilized_tip_position.x)
 		Y.append(finger.stabilized_tip_position.y)
-		Z.append(finger.stabilized_tip_position.z) 
+		Z.append(finger.stabilized_tip_position.z)
 	return np.array([X, Z, Y])
 
 
@@ -58,10 +68,11 @@ def plot_points(points, scatter):
 def plot_simple(points, ax):
 	'''
 	Plot lines connecting the palms to the fingers, assuming thats the only data we get.
+	Assumes we are using the 18 point tip model from get_points().
 	'''
 	# Get Palm Position
 	palm = points[:,0]
-	
+
 	# For Each of the 5 fingers
 	for n in range(1,6):
 		# Draw a line from the palm to the finger tips
@@ -72,7 +83,7 @@ def plot_simple(points, ax):
 def reset_plot(ax):
 	'''
 	The Line plots will plot other eachother, as I make new lines instead of changing the data for the old ones
-	TODO: Fix plot_simple and plot_lines so I don't need to do this. 
+	TODO: Fix plot_simple and plot_lines so I don't need to do this.
 	'''
 	# Reset the plot
 	ax.cla()
@@ -86,11 +97,15 @@ def reset_plot(ax):
 
 # Plotting the whole hand
 def plot_bone_lines(points, ax):
+	'''
+	Plot the lines for the hand based on a full hand model.
+	(22 points, 66 vars)
+	'''
 	mcps = []
-	
+
 	# Wrist
 	wrist = points[:,1]
-	
+
 	# For Each of the 5 fingers
 	for i in range(0,5):
 		n = 4*i + 2
@@ -100,18 +115,18 @@ def plot_bone_lines(points, ax):
 		pip = points[:,n+1]
 		dip = points[:,n+2]
 		tip = points[:,n+3]
-		
-		# Connect the lowest joint to the middle joint    
+
+		# Connect the lowest joint to the middle joint
 		bot = plt3d.art3d.Line3D([mcp[0], pip[0]], [mcp[1], pip[1]], [mcp[2], pip[2]])
 		ax.add_line(bot)
-		
+
 		# Connect the middle joint to the top joint
 		mid = plt3d.art3d.Line3D([pip[0], dip[0]], [pip[1], dip[1]], [pip[2], dip[2]])
-		ax.add_line(mid)       
-		
+		ax.add_line(mid)
+
 		# Connect the top joint to the tip of the finger
 		top = plt3d.art3d.Line3D([dip[0], tip[0]], [dip[1], tip[1]], [dip[2], tip[2]])
-		ax.add_line(top)        
+		ax.add_line(top)
 
 		# Connect each of the fingers together
 		mcps.append(mcp)
@@ -125,7 +140,7 @@ def plot_bone_lines(points, ax):
 								  [wrist[1], mcps[3+1][1]],
 								  [wrist[2], mcps[3+1][2]])
 	ax.add_line(line)
-	
+
 	# Generate the "Wrist", note right side is not right.
 	line = plt3d.art3d.Line3D([wrist[0], mcps[0][0]],
 								  [wrist[1], mcps[0][1]],
@@ -133,6 +148,12 @@ def plot_bone_lines(points, ax):
 	ax.add_line(line)
 
 def get_bone_points(controller):
+	'''
+	Gets points for a full hand model. (22 points, 66 vars)
+	Uses 4 joints for each finger and 3 for the thumb.
+	Also uses Palm and Wrist position.
+	Note this could be reduced to 21 points as the thumb has 1 less joint.
+	'''
 	frame = controller.frame()
 	hand = frame.hands.rightmost
 	if not hand.is_valid: return None
@@ -205,3 +226,67 @@ def get_myodata_arr(myo, shared_arr):
 	except KeyboardInterrupt:
 		print("Quitting Myo worker")
 		quit()
+
+# Dataframe Creation
+
+def data_to_simple_df(myo_data, leap_data):
+	'''
+	Takes myo and leap data, returns dataframe
+	Assumes 18 point model. Finger tips + Palm
+	'''
+	myo_cols = ["Channel_1", "Channel_2", "Channel_3", "Channel_4", "Channel_5", "Channel_6", "Channel_7", "Channel_8"]
+	leap_cols = []
+	finger_names = ['Palm', 'Thumb', 'Index', 'Middle', 'Ring', 'Pinky']
+	# We can of course generate column names on the fly:
+	# Note the ordering being different to the order we pack them in.
+	for dim in ["x","y","z"]:
+		for finger in finger_names:
+			leap_cols.append(f"{finger}_tip_{dim}")
+
+	myo_df = pd.DataFrame(myo_data, columns=myo_cols)
+	leap_df = pd.DataFrame(leap_data, columns=leap_cols)
+
+	df = myo_df.join(leap_df)
+	return df
+
+def data_to_bones_df(myo_data, leap_data):
+	'''
+	Takes myo and leap data, returns dataframe.
+	Assumes full hand model. (22 points, 66 vars)
+	Uses 4 joints for each finger and 3 for the thumb.
+	Also uses Palm and Wrist position.
+	Note this could be reduced to 21 points as the thumb has 1 less joint.
+	'''
+	myo_cols = ["Channel_1", "Channel_2", "Channel_3", "Channel_4", "Channel_5", "Channel_6", "Channel_7", "Channel_8"]
+	leap_bone_columns = [
+		"Palm_x", "Palm_y", "Palm_z",
+		"Wrist_x", "Wrist_y", "Wrist_z",
+		'Thumb_MCP_x', 'Thumb_MCP_y', 'Thumb_MCP_z',
+		'Thumb_PIP_x', 'Thumb_PIP_y', 'Thumb_PIP_z',
+		'Thumb_DIP_x', 'Thumb_DIP_y', 'Thumb_DIP_z',
+		'Thumb_TIP_x', 'Thumb_TIP_y', 'Thumb_TIP_z',
+		'Index_MCP_x', 'Index_MCP_y', 'Index_MCP_z',
+		'Index_PIP_x', 'Index_PIP_y', 'Index_PIP_z',
+		'Index_DIP_x', 'Index_DIP_y', 'Index_DIP_z',
+		'Index_TIP_x', 'Index_TIP_y', 'Index_TIP_z',
+		'Middle_MCP_x', 'Middle_MCP_y', 'Middle_MCP_z',
+		'Middle_PIP_x', 'Middle_PIP_y', 'Middle_PIP_z',
+		'Middle_DIP_x', 'Middle_DIP_y', 'Middle_DIP_z',
+		'Middle_TIP_x', 'Middle_TIP_y', 'Middle_TIP_z',
+		'Ring_MCP_x', 'Ring_MCP_y', 'Ring_MCP_z',
+		'Ring_PIP_x', 'Ring_PIP_y', 'Ring_PIP_z',
+		'Ring_DIP_x', 'Ring_DIP_y', 'Ring_DIP_z',
+		'Ring_TIP_x', 'Ring_TIP_y', 'Ring_TIP_z',
+		'Pinky_MCP_x', 'Pinky_MCP_y', 'Pinky_MCP_z',
+		'Pinky_PIP_x', 'Pinky_PIP_y', 'Pinky_PIP_z',
+		'Pinky_DIP_x', 'Pinky_DIP_y', 'Pinky_DIP_z',
+		'Pinky_TIP_x', 'Pinky_TIP_y', 'Pinky_TIP_z'
+		]
+
+	myo_df = pd.DataFrame(myo_data, columns=myo_cols)
+	leap_df = pd.DataFrame(leap_data, columns=leap_bone_columns)
+
+	df = myo_df.join(leap_df)
+	return df
+
+

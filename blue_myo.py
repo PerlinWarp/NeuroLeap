@@ -17,16 +17,16 @@ class Handle:
 	EMG3 = 0x34
 
 class Connection(btle.Peripheral):
-	def __init__(self, mac, mode=0):
+	def __init__(self, mac, raw=True):
 		btle.Peripheral.__init__(self, mac)
 
-		self.writeCharacteristic(0x2c, b'\x01\x00')  # Suscribe to EmgData0Characteristic
-		self.writeCharacteristic(0x2f, b'\x01\x00')  # Suscribe to EmgData1Characteristic
-		self.writeCharacteristic(0x32, b'\x01\x00')  # Suscribe to EmgData2Characteristic
-		self.writeCharacteristic(0x35, b'\x01\x00')  # Suscribe to EmgData3Characteristic
+		if (raw):
+			self.subscribe_to_raw()
+		else:
+			self.subscribe_to_filtered()
 
-		# struct.pack('<5B', 1, 3, emg_mode, imu_mode, classifier_mode)
-		self.writeCharacteristic(0x19, b'\x01\x03\x03\x00\x00')
+		# Tell the Myo not to sleep, otherwise it disconnects after 30
+		self.writeCharacteristic(0x19, struct.pack('<3B', 9, 1, 1), True)
 
 	def subscribe_to_filtered(self):
 		# 50Hz EMG Rectified, bandpass filtered, 0x01
@@ -34,26 +34,15 @@ class Connection(btle.Peripheral):
 		self.writeCharacteristic(0x28, struct.pack('<bb', 0x01, 0x00),True)
 		self.writeCharacteristic(0x19, struct.pack('<bbbbb', 1,1,1,3,1) ,True )
 
-		# Tell the Myo not to sleep, otherwise it disconnects after 30
-		self.writeCharacteristic(0x19, struct.pack('<3B', 9, 1, 1), True)
-
 	def subscribe_to_raw(self):
+		self.writeCharacteristic(0x2c, b'\x01\x00')  # Suscribe to EmgData0Characteristic
+		self.writeCharacteristic(0x2f, b'\x01\x00')  # Suscribe to EmgData1Characteristic
+		self.writeCharacteristic(0x32, b'\x01\x00')  # Suscribe to EmgData2Characteristic
+		self.writeCharacteristic(0x35, b'\x01\x00')  # Suscribe to EmgData3Characteristic
 
-		# enable IMU data
-		#self.writeCharacteristic(0x1d, b'\x01\x00')
-		# enable on/off arm notifications
-		#self.writeCharacteristic(0x24, b'\x02\x00')
-
-		# Subscribe to 200Hz EMG
-		self.writeCharacteristic(Handle.EMG0, b'\x01\x00')
-		self.writeCharacteristic(Handle.EMG1, b'\x01\x00')
-		self.writeCharacteristic(Handle.EMG2, b'\x01\x00')
-		self.writeCharacteristic(Handle.EMG3, b'\x01\x00')
-		self.writeCharacteristic(0x19, struct.pack('<5B', 1,3,1,1,1) ,True )
+		# struct.pack('<5B', 1, 3, emg_mode, imu_mode, classifier_mode)
+		self.writeCharacteristic(0x19, b'\x01\x03\x03\x00\x00')
 		print("BlueMyo - 200Hz Raw")
-
-		# enable battery notifications
-		self.writeCharacteristic(0x12, b'\x01\x10')
 
 
 	def vibrate(self, length):
@@ -77,12 +66,12 @@ class MyoDelegate(btle.DefaultDelegate):
 		elif(cHandle in (Handle.EMG0, Handle.EMG1, Handle.EMG2, Handle.EMG3)):
 			emg1 = struct.unpack('<8b', data[:8])
 			emg2 = struct.unpack('<8b', data[8:])
-			# We get two sequential readings. 
+			# We get two sequential readings.
 			self.q.put(emg1)
 			self.q.put(emg2)
 
-def myo_worker(q, mac_addr = 'c2:19:f0:35:28:5d'):
-	p = Connection(mac_addr)
+def myo_worker(q, mac_addr = 'c2:19:f0:35:28:5d', raw=True):
+	p = Connection(mac_addr, raw)
 	p.setDelegate(MyoDelegate(q))
 
 	print("Connected")
@@ -96,7 +85,7 @@ def myo_worker(q, mac_addr = 'c2:19:f0:35:28:5d'):
 	while True:
 		try:
 			'''
-			Blocks until a notification is received from the peripheral, or until the given timeout (in seconds) 
+			Blocks until a notification is received from the peripheral, or until the given timeout (in seconds)
 			has elapsed. If a notification is received, the delegate object’s handleNotification() method will be called, and waitForNotifications() will then return True.
 			If nothing is received before the timeout elapses, this will return False.
 			'''

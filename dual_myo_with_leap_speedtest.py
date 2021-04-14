@@ -9,6 +9,7 @@ import Leap
 import NeuroLeap as nl
 
 PLOT = True
+RAW = True
 
 
 # ------------ Leap Setup ---------------
@@ -28,7 +29,7 @@ addr2 = [93, 40, 53, 240, 25, 194] # Second Bought, Left
 
 # Start First Myo (Blue_Myo)
 b_q = multiprocessing.Queue()
-b_p = multiprocessing.Process(target=blue_myo.myo_worker, args=(b_q,mac1,))
+b_p = multiprocessing.Process(target=blue_myo.myo_worker, args=(b_q,mac1,RAW, ))
 b_p.start()
 
 # Wait until it connects
@@ -37,7 +38,7 @@ time.sleep(5)
 # Start Second Myo
 q = multiprocessing.Queue()
 
-m = MyoRaw(raw=False, filtered=True)
+m = MyoRaw(raw=RAW, filtered=False)
 m.connect(addr2)
 
 def worker(q):
@@ -63,11 +64,6 @@ m.vibrate(1)
 p = multiprocessing.Process(target=worker, args=(q,))
 p.start()
 
-# Now both are connected we can start the speedtest.
-start_time = time.time()
-last_n_1 = start_time
-last_n_2 = start_time
-
 n_points = 50
 
 myo1_data = []
@@ -91,8 +87,13 @@ try:
 		if ((not q.empty())): q.get()
 		if (not b_q.empty()): b_q.get()
 
+	# Now both are connected we can start the speedtest.
+	start_time = time.time()
+	last_n_1 = start_time
+	last_n_2 = start_time
+
 	while True:
-		sizes = len(myo1_data) + len(myo2_data)
+		points = None
 
 		# Get data from the first Myo
 		while not(b_q.empty()):
@@ -105,7 +106,7 @@ try:
 			data_points = len(myo1_data)
 			if (data_points % n_points == 0):
 				time_s = time.time()
-				print(f"{data_points} points, {n_points} in {time_s-last_n_1}")
+				print(f"BM {data_points} points, {n_points} in {time_s-last_n_1}")
 				freq = n_points/(time_s-last_n_1)
 				print(f"Giving BlueMyo a frequency of {freq} Hz")
 				last_n_1 = time.time()
@@ -118,19 +119,21 @@ try:
 			#print('Myo 2', emg)
 			myo2_data.append(emg)
 
+			points = nl.get_points(controller)
+
 			data_points = len(myo2_data)
 			if (data_points % n_points == 0):
 				time_s = time.time()
-				print(f"{data_points} points, {n_points} in {time_s-last_n_2}")
+				print(f"MR {data_points} points, {n_points} in {time_s-last_n_2}")
 				freq = n_points/(time_s-last_n_2)
 				print(f"Giving MyoRaw a frequency of {freq} Hz")
 				last_n_2 = time.time()
 				myo2_freq.append(freq)
 
-		if not(sizes == len(myo1_data) + len(myo2_data)):
-			# Grab labels from the leap too, if we got Myo data
-			leap_data.append(nl.get_points(controller))
-
+		# Check if data was gathered this frame
+		if (points is not None):
+			ld = points.flatten()
+			leap_data.append(ld)
 
 except KeyboardInterrupt:
 	print("Quitting")

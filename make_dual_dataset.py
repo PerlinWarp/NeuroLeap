@@ -9,8 +9,12 @@ import blue_myo
 from myo_raw import MyoRaw
 import NeuroLeap as nl
 
-file_name = "dual_emg.csv"
+SECONDS = 90
 PLOT = True
+RAW = False
+file_name = f"dual_thumb_emg_{SECONDS}.csv"
+carryOn = True
+
 
 # For BlueMyo
 mac1 = "de:36:7a:87:63:be" # First Bought, Right 117 237 250 237 175 59 235 118 222
@@ -28,7 +32,8 @@ controller.set_policy_flags(Leap.Controller.POLICY_BACKGROUND_FRAMES)
 
 # Start First Myo (Blue_Myo)
 b_q = multiprocessing.Queue()
-b_p = multiprocessing.Process(target=blue_myo.myo_worker, args=(b_q,mac1,))
+b_p = multiprocessing.Process(target=blue_myo.myo_worker, args=(b_q,mac1,RAW,))
+b_p.daemon=True
 b_p.start()
 
 # Wait until it connects
@@ -37,7 +42,7 @@ time.sleep(5)
 # Start Second Myo
 q = multiprocessing.Queue()
 
-m = MyoRaw(raw=False, filtered=True)
+m = MyoRaw(raw=RAW, filtered=True)
 m.connect(addr2)
 
 def worker(q):
@@ -61,10 +66,9 @@ m.set_leds([128, 0, 0], [128, 0, 0])
 # Vibrate to know we connected okay
 m.vibrate(1)
 p = multiprocessing.Process(target=worker, args=(q,))
+p.daemon=True
 p.start()
 
-# Now both are connected we can start the speedtest.
-start_time = time.time()
 
 myo_blue_data = []
 myo_raw_data = []
@@ -72,88 +76,95 @@ myo_raw_data = []
 myo_raw_leap_data = []
 # -------- Main Program Loop -----------
 # Get data from Myos
-try:
-	print("Waiting for both to connect.")
-	# Wait to get data from both Myos to know they are connected
-	q.get() # Block until q has an item
- 	# Myo raw usually takes longer, wait for that first.
-	b_q.get()
-	print("Both should be connected")
 
-	# Empty both queues once
-	while ( (not b_q.empty()) or (not q.empty()) ):
-		if ((not q.empty())): q.get()
-		if (not b_q.empty()): b_q.get()
+print("Waiting for both to connect.")
+# Wait to get data from both Myos to know they are connected
+q.get() # Block until q has an item
+	# Myo raw usually takes longer, wait for that first.
+b_q.get()
+print("Both should be connected")
 
-	# Both devices should now be reporting data, and be empty 
+# Empty both queues once
+while ( (not b_q.empty()) or (not q.empty()) ):
+	if ((not q.empty())): q.get()
+	if (not b_q.empty()): b_q.get()
 
-	while True:
-		points = None
-		# Get data from the first Myo (Blue Myo)
-		while not(b_q.empty()):
-			# Get the new data from the Myo queue
-			emg = list(b_q.get())
-			#print('Myo 1', emg)
-			myo_blue_data.append(emg)
+# Both devices should now be reporting data, and be empty 
+start_time = time.time()
+print("Starting gathering data")
 
-		# Get data from the second Myo (Myo Raw)
-		while not(q.empty()):
-			# Get the new data from the Myo queue
-			emg = list(q.get())
-			#print('Myo 2', emg)
-			myo_raw_data.append(emg)
-			
-			# Get Leap Motion points
-			points = nl.get_points(controller)
+while carryOn:
+	points = None
+	# Get data from the first Myo (Blue Myo)
+	while not(b_q.empty()):
+		# Get the new data from the Myo queue
+		emg = list(b_q.get())
+		#print('Myo 1', emg)
+		myo_blue_data.append(emg)
 
-		# Check if data was gathered this frame
-		if (points is not None):
-			ld = points.flatten()
-			myo_raw_leap_data.append(ld)
+	# Get data from the second Myo (Myo Raw)
+	while not(q.empty()):
+		# Get the new data from the Myo queue
+		emg = list(q.get())
+		#print('Myo 2', emg)
+		myo_raw_data.append(emg)
+		
+		# Get Leap Motion points
+		points = nl.get_points(controller)
 
-except KeyboardInterrupt:
-	end_time = time.time()
-	print(f"Quitting, after {end_time} seconds.")
-	m.set_leds([255, 0, 64], [255, 0, 64])
-	m.disconnect()
+	# Check if data was gathered this frame
+	if (points is not None):
+		ld = points.flatten()
+		myo_raw_leap_data.append(ld)
 
-	print('Saving')
-	print(f"Blue Myo {len(myo_blue_data)}")
-	print(f"Raw Myo {len(myo_raw_data)}")
-	print(f"Leap {len(myo_raw_leap_data)}")
+	if (time.time() - start_time > SECONDS):
+		carryOn = False
 
-	print(f"{len(myo_blue_data)} measurements in {end_time-start_time} seconds.")
-	freq = len(myo_blue_data)/(end_time-start_time)
-	print(f"Giving BlueMyo a frequency of {freq} Hz")
+# Quitting
+p.terminate()
+b_p.terminate()
+end_time = time.time()
+print(f"\nQuitting, after {end_time-start_time} seconds.")
+m.set_leds([255, 0, 64], [255, 0, 64])
+m.disconnect()
 
-	print(f"{len(myo_raw_data)} measurements in {end_time-start_time} seconds.")
-	freq = len(myo_raw_data)/(end_time-start_time)
-	print(f"Giving MyoRaw a frequency of {freq} Hz")
+print('Saving')
+print(f"Blue Myo {len(myo_blue_data)}")
+print(f"Raw Myo {len(myo_raw_data)}")
+print(f"Leap {len(myo_raw_leap_data)}")
 
-	print(f"{len(myo_raw_leap_data)} measurements in {end_time-start_time} seconds.")
-	freq = len(myo_raw_leap_data)/(end_time-start_time)
-	print(f"Giving LeapM a frequency of {freq} Hz")
+print(f"BM: {len(myo_blue_data)} measurements in {end_time-start_time} seconds.")
+freq = len(myo_blue_data)/(end_time-start_time)
+print(f"Giving BlueMyo a frequency of {freq} Hz")
 
-	myo1_cols = ["Channel_1", "Channel_2", "Channel_3", "Channel_4", "Channel_5", "Channel_6", "Channel_7", "Channel_8"]
-	myo2_cols = ["Channel_9", "Channel_10", "Channel_11", "Channel_12", "Channel_13", "Channel_14", "Channel_15", "Channel_16"]
+print(f"MR: {len(myo_raw_data)} measurements in {end_time-start_time} seconds.")
+freq = len(myo_raw_data)/(end_time-start_time)
+print(f"Giving MyoRaw a frequency of {freq} Hz")
 
-	myo1_df = pd.DataFrame(myo_blue_data, columns=myo1_cols)
-	myo2_df = pd.DataFrame(myo_raw_data, columns=myo2_cols)
+print(f"LM: {len(myo_raw_leap_data)} measurements in {end_time-start_time} seconds.")
+freq = len(myo_raw_leap_data)/(end_time-start_time)
+print(f"Giving LeapM a frequency of {freq} Hz")
 
-	df = myo1_df.join(myo2_df)
+myo1_cols = ["Channel_1", "Channel_2", "Channel_3", "Channel_4", "Channel_5", "Channel_6", "Channel_7", "Channel_8"]
+myo2_cols = ["Channel_9", "Channel_10", "Channel_11", "Channel_12", "Channel_13", "Channel_14", "Channel_15", "Channel_16"]
 
-	# Add Leap data too
-	leap_cols = []
-	finger_names = ['Palm', 'Thumb', 'Index', 'Middle', 'Ring', 'Pinky']
-	# We can of course generate column names on the fly:
-	# Note the ordering being different to the order we pack them in. 
-	for dim in ["x","y","z"]:
-		for finger in finger_names:
-			leap_cols.append(f"{finger}_tip_{dim}")
+myo1_df = pd.DataFrame(myo_blue_data, columns=myo1_cols)
+myo2_df = pd.DataFrame(myo_raw_data, columns=myo2_cols)
 
-	leap_df = pd.DataFrame(myo_raw_leap_data, columns=leap_cols)
+df = myo1_df.join(myo2_df)
 
-	df = df.join(leap_df)
+# Add Leap data too
+leap_cols = []
+finger_names = ['Palm', 'Thumb', 'Index', 'Middle', 'Ring', 'Pinky']
+# We can of course generate column names on the fly:
+# Note the ordering being different to the order we pack them in. 
+for dim in ["x","y","z"]:
+	for finger in finger_names:
+		leap_cols.append(f"{finger}_tip_{dim}")
 
-	df.to_csv(file_name, index=False)
-	print("CSV Saved", file_name)
+leap_df = pd.DataFrame(myo_raw_leap_data, columns=leap_cols)
+
+df = df.join(leap_df)
+
+df.to_csv(file_name, index=False)
+print("CSV Saved", file_name)
