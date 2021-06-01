@@ -33,7 +33,7 @@ def predict_thumb(emg, model):
 def predict_rel_thumb(semg_input, model, input_scaler, output_scaler):
 	'''
 	Use when repredicting the relative position of the hand.
-	This allows to predict without the hand position being the same in prod as it was while training. 
+	This allows to predict without the hand position being the same in prod as it was while training.
 	'''
 	# Get some input data
 	semg_input = semg_input.reshape(1,8)
@@ -68,7 +68,7 @@ if __name__ == '__main__':
 	try:
 		# Load the keras model
 		#model = load_model('BenchmarkNN.h5')
-		model_name = "NNRel-4mins-MinMaxScaled"
+		model_name = "NNRel-60secs-StanScaled"
 		model = load_model(f"models/{model_name}.h5")
 
 		input_scaler = joblib.load(f'models/{model_name}-EMG.gz')
@@ -100,7 +100,7 @@ if __name__ == '__main__':
 			pred = predict_rel_thumb(myo_data, model, input_scaler, output_scaler)
 			# As we are only predicting the thumb, I am using a real data to help see if the thumb prediction is bad
 			return pred
-			
+
 		def animate(i):
 			# Prediction Plotting
 			if (p.is_alive()):
@@ -111,14 +111,14 @@ if __name__ == '__main__':
 
 			# Needed for plot_simple, for line plots
 			nl.reset_plot(ax)
-			
+
 			if (cpoints is not None):
 				patches = ax.scatter(cpoints[0], cpoints[1], cpoints[2], s=10, alpha=1)
 				nl.plot_simple(cpoints, ax)
 				nl.plot_points(cpoints, patches)
 
 			# Leap Motion Plotting
-			## Note this should be done in another thread or weird things happen. 
+			## Note this should be done in another thread or weird things happen.
 			points = nl.get_points(controller)
 			nl.reset_plot(ax2)
 			if (points is not None):
@@ -132,4 +132,4 @@ if __name__ == '__main__':
 		plt.show()
 	except KeyboardInterrupt:
 		print("Quitting...")
-		quit()		
+		quit()

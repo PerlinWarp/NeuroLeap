@@ -10,8 +10,9 @@ import NeuroLeap as nl
 
 # Configuraion options
 MYO_DATA = True
-FULL_HAND = True
-FILE_PATH = "dataset-full_hand-5s.csv"
+FULL_HAND = False
+FILE_PATH = "thumb_dataset_30.csv"
+#FILE_PATH = "data/thumb_dataset-240-raw-False.csv"
 
 if (FULL_HAND):
 	# Five finger, 4 joints + palm, wrist. x,y,z

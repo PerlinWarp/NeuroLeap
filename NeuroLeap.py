@@ -1,3 +1,4 @@
+import Leap
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -6,6 +7,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import mpl_toolkits.mplot3d as plt3d
 
 # Leap Motion Hand Animation
+finger_bones = ['metacarpals', 'proximal', 'intermediate', 'distal']
 
 def get_points(controller):
 	'''
@@ -32,6 +34,45 @@ def get_points(controller):
 		Y.append(finger.tip_position.y)
 		Z.append(finger.tip_position.z)
 	return np.array([X, Z, Y])
+
+def get_rel_points(controller):
+	'''
+	Returns points for a simple hand model.
+	Relative to the hand itself.
+	18 point model. Finger tips + Palm
+	'''
+	frame = controller.frame()
+	hand = frame.hands.rightmost
+	if not hand.is_valid: return None
+
+	# Transforming finger coordinates into hands POV
+	hand_x_basis = hand.basis.x_basis
+	hand_y_basis = hand.basis.y_basis
+	hand_z_basis = hand.basis.z_basis
+	hand_origin = hand.palm_position
+	hand_transform = Leap.Matrix(hand_x_basis, hand_y_basis, hand_z_basis, hand_origin)
+	hand_transform = hand_transform.rigid_inverse()
+
+	fingers = hand.fingers
+
+	X = []
+	Y = []
+	Z = []
+
+	# Add the position of the palms
+	palm_pos = hand_transform.transform_point(hand.palm_position)
+	X.append(-1 *palm_pos.x)
+	Y.append(palm_pos.y)
+	Z.append(palm_pos.z)
+
+	for finger in fingers:
+		transformed_position = hand_transform.transform_point(finger.tip_position)
+		# Add finger tip positions
+		X.append(-1 * transformed_position.x)
+		Y.append(transformed_position.y)
+		Z.append(transformed_position.z)
+	return np.array([X, Z, Y])
+
 
 def get_stable_points(controller):
 	'''
@@ -201,6 +242,71 @@ def get_bone_points(controller):
 			Z.append(finger.joint_position(joint)[2])
 
 	return np.array([X, Z, Y])
+
+def get_rel_bone_points(controller):
+	'''
+	Gets points for a full hand model. (22 points, 66 vars)
+	Relative to the hand itself.
+	Uses 4 joints for each finger and 3 for the thumb.
+	Also uses Palm and Wrist position.
+	Note this could be reduced to 21 points as the thumb has 1 less joint.
+	'''
+	frame = controller.frame()
+	hand = frame.hands.rightmost
+	if not hand.is_valid: return None
+
+	# Get hand transform
+	hand_x_basis = hand.basis.x_basis
+	hand_y_basis = hand.basis.y_basis
+	hand_z_basis = hand.basis.z_basis
+	hand_origin = hand.palm_position
+	hand_transform = Leap.Matrix(hand_x_basis, hand_y_basis, hand_z_basis, hand_origin)
+	hand_transform = hand_transform.rigid_inverse()
+
+	fingers = hand.fingers
+
+	X = []
+	Y = []
+	Z = []
+
+	# Add the position of the palms
+	# Transform palm position
+	palm_pos = hand_transform.transform_point(hand.palm_position)
+	X.append(palm_pos.x)
+	Y.append(palm_pos.y)
+	Z.append(palm_pos.z)
+
+	# Add wrist position
+	wrist_pos = hand_transform.transform_point(hand.wrist_position)
+	X.append(wrist_pos.x)
+	Y.append(wrist_pos.y)
+	Z.append(wrist_pos.z)
+
+
+	# Add fingers
+	for finger in fingers:
+		for joint in range(0,4):
+			'''
+			0 = JOINT_MCP – The metacarpophalangeal joint, or knuckle, of the finger.
+			1 = JOINT_PIP – The proximal interphalangeal joint of the finger. This joint is the middle joint of a finger.
+			2 = JOINT_DIP – The distal interphalangeal joint of the finger. This joint is closest to the tip.
+			3 = JOINT_TIP – The tip of the finger.
+			'''
+			# Transform the finger
+			transformed_position = hand_transform.transform_point(finger.joint_position(joint))
+			X.append(transformed_position[0])
+			Y.append(transformed_position[1])
+			Z.append(transformed_position[2])
+
+	return np.array([X, Z, Y])
+
+def get_bone_angles(controller):
+	frame = controller.frame()
+	hand = frame.hands.rightmost
+	if not hand.is_valid: return None
+
+
+
 
 # Other Leap Funcs
 def save_points(points,name='points.csv'):

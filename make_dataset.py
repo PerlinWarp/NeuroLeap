@@ -11,7 +11,7 @@ import NeuroLeap as nl
 
 # Configs
 FULL_HAND = True
-SECONDS = 5
+SECONDS = 60
 RAW = False
 CSV_NAME = "dataset"
 

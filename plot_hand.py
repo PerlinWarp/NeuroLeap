@@ -26,10 +26,10 @@ for finger in finger_names:
 print(columns)
 '''
 columns = [
-		"Palm_x", "Palm_y", "Palm_z", 
+		"Palm_x", "Palm_y", "Palm_z",
 		"Wrist_x", "Wrist_y", "Wrist_z",
-		'Thumb_MCP_x', 'Thumb_MCP_y', 'Thumb_MCP_z', 
-		'Thumb_PIP_x', 'Thumb_PIP_y', 'Thumb_PIP_z', 
+		'Thumb_MCP_x', 'Thumb_MCP_y', 'Thumb_MCP_z',
+		'Thumb_PIP_x', 'Thumb_PIP_y', 'Thumb_PIP_z',
 		'Thumb_DIP_x', 'Thumb_DIP_y', 'Thumb_DIP_z',
 		'Thumb_TIP_x', 'Thumb_TIP_y', 'Thumb_TIP_z',
 		'Index_MCP_x', 'Index_MCP_y', 'Index_MCP_z',
@@ -95,5 +95,5 @@ def main():
 
 if __name__ == '__main__':
 	main()
-	
+
 
