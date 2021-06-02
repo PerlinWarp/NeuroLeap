@@ -32,4 +32,23 @@ plot_hand.py - Live plots 22 points of the hand gathered from the Leap Motion us
   
 animate_saved.py - Animates gathered LeapMotion data, useful to see exactly what gestures were performed in each dataset.
   
+myo_examp.py - An example program that by default, plots 50Hz rectified bandpass filtered Myo data. Shows how to gather myo data in a seperate thread and plot it using pygame.  
+  
+plot_angle_from_rot.py - Generates angles, by creating a rotation matrix from basis vectors. This is a work in progress.  
+  
+  
+## Creating your own model.  
+1. Fix your leap motion in place, e.g. by using bluetack, draw an outline around it, just incase. 
+  
+2. Put the Myo armband on the thickest part of your forearm, with the LED bar pointing down towards your fingers. 
+  
+3. Wait 5 minutes for the Myo to warm up.  
+  
+4. Open make_dataset.py, set the filter settings for the Myo, the dataset name and the time that data should be gathered. Too long and your fingers will fatigue, affecting the gathered data. When done, a CSV of LeapMyo data will be saved in the project root folder.    
+  
+5. Use animate_saved.py to watch this CSV back and see if the Leap glitches. If it's fine, use it with a notebook to make a model.  
+  
+6. Provide predict_hand_points.py with a keras model that outputs the relative position of the fingers to the palm. 
+ 
 
+ 

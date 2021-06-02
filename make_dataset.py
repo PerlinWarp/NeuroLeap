@@ -11,9 +11,13 @@ import NeuroLeap as nl
 
 # Configs
 FULL_HAND = True
-SECONDS = 60
+SECONDS = 30
+''' RAW is the Myo preprocessing setting.
+	If RAW is False, we get undocumented filtered 50Hz. (0x01)
+	If RAW is true, we get unrectified 200Hz data between -128 and 127.
+'''
 RAW = False
-CSV_NAME = "dataset"
+CSV_NAME = "dataset-test"
 
 ops = ""
 if (RAW): ops += "raw-"

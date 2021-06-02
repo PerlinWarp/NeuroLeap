@@ -86,6 +86,7 @@ def get_rotation_matrix(bone):
 	z_basis = basis.z_basis
 	matrix = Leap.Matrix(x_basis, y_basis, z_basis).to_array_3x3()
 	matrix = np.reshape(matrix, newshape=(3, 3))
+	print("Basis", matrix)
 	return matrix
 
 def get_angles_from_rot(rot_mat):
@@ -147,8 +148,10 @@ def get_angles(hand):
 	angles = []
 
 	for finger in hand.fingers:
+		bone_angles = []
 		for b in range(0,4):
 			if (b == 0):
+				# The
 				last_bone = hand
 			else:
 				last_bone = finger.bone(b-1)
@@ -157,9 +160,26 @@ def get_angles(hand):
 			last_bone_mat = get_rotation_matrix(last_bone)
 			bone_mat = get_rotation_matrix(bone)
 			# Get rotation matrix between bones, change of basis
-			rot_mat = np.matmul(bone_mat, last_bone_mat.transpose())
+			rot_mat = np.matmul(
+				bone_mat, last_bone_mat.transpose()
+				)
+			'''
+			https://github.com/seanschneeweiss/RoSeMotion/blob/da6bc111ad464d3409f3b8562d17b621b0498513/app/LeapData.py
+				rot = np.matmul(
+					np.matmul(
+						initial_basis, np.transpose(basis)
+					),
+					np.transpose(
+						np.matmul(
+							parent_initial_basis, np.transpose(parent_basis)
+						)
+					)
+			)
+			'''
+
 			# Generate euler angles in degrees from rotation matrix
-			angles.append(get_angles_from_rot(rot_mat))
+			bone_angles.append(get_angles_from_rot(rot_mat))
+		angles.append(bone_angles)
 	return angles
 
 def animate(i):
@@ -195,36 +215,40 @@ def animate(i):
 			Z = [0]
 			for finger in range(0,5):
 				for bone in range(0,4):
-					pitch = angles[finger*bone, 0]
-					yaw = angles[finger*bone, 1]
-					roll = angles[finger*bone, 2]
+					pitch = angles[finger,bone, 0]
+					yaw = angles[finger,bone, 1]
+					roll = angles[finger,bone, 2]
 
-					theta = [pitch, yaw, roll]
+					theta = angles[finger,bone, :]
+
+					#theta = [pitch, yaw, roll]
 					rot_mat = get_rot_from_angles(theta)
+					# Which basis is this bone defined in???
+					bone_assume = np.array([0,20,0])
+					new_bone = rot_mat.dot(bone_assume)#.dot(get_rot_from_angles(angles[0, bone, :]))
 
-					bone_assume = np.array([0,10,0])
-					new_bone = rot_mat.dot(bone_assume)
-
+					# Debugging
 					if (finger == 1):
 						if (bone == 1):
+							print("Pitch degrees",theta[0] * 57.296)
 							print("Angles", theta)
 							print("rot_mat ", rot_mat)
 							print("Det" ,np.linalg.det(rot_mat))
 							# Testing time
-							new_bone = rot_mat.dot([0,10,0])
 							print("nb", new_bone)
 
-					x = X[finger*bone+bone] + new_bone[0] + finger*10
-					y = Y[finger*bone+bone] + new_bone[1]
-					z = Y[finger*bone+bone] + new_bone[2]
 
-					X.append(-1 * x)
+					x = X[finger*3+bone] + new_bone[0]
+					y = Y[finger*3+bone] + new_bone[1]
+					z = Z[finger*3+bone] + new_bone[2]
+
+					X.append(x)
 					Y.append(y)
 					Z.append(z)
 
 		# Convert to a numpy array
 		a_points = [X, Z, Y]
-		a_points = np.array(a_points)*4
+		a_points = np.array(a_points)
 
 		# Creating the 2nd plot
 		angle_plot = ax2.scatter(a_points[0], a_points[1], a_points[2], s=[10]*NUM_POINTS, alpha=1)

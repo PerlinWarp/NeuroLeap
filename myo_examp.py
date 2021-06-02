@@ -5,7 +5,7 @@ from myo_raw import MyoRaw
 import common as c
 
 pygame.init()
- 
+
 carryOn = True
 
 # The clock will be used to control how fast the screen updates
@@ -42,7 +42,7 @@ m.vibrate(1)
 p = multiprocessing.Process(target=worker, args=(q,))
 p.start()
 
-# Setup Myo plotting 
+# Setup Myo plotting
 # Open a new window
 size = (c.WIN_X, c.WIN_Y)
 pygame.display.set_caption("Myo Data")
@@ -75,23 +75,26 @@ def plot(scr, vals):
     pygame.display.flip()
     last_vals = vals
 
+try:
+    while carryOn:
 
-while carryOn:
-
-	while not(q.empty()):
-		# Get the new data from the Myo queue
-		emg = list(q.get())
-		plot(scr, [e / 500. for e in emg])
-		print(emg)
+    	while not(q.empty()):
+    		# Get the new data from the Myo queue
+    		emg = list(q.get())
+    		plot(scr, [e / 500. for e in emg])
+    		print(emg)
 
 
 
- 	
-	# --- Go ahead and update the screen with what we've drawn.
-	pygame.display.flip()
- 
-	# --- Limit to 60 frames per second
-	clock.tick(60)
- 
-# Once we have exited the main program loop we can stop the game engine:
-pygame.quit()
+
+    	# --- Go ahead and update the screen with what we've drawn.
+    	pygame.display.flip()
+
+    	# --- Limit to 60 frames per second
+    	clock.tick(60)
+
+    # Once we have exited the main program loop we can stop the game engine:
+    pygame.quit()
+except KeyboardInterrupt:
+    pygame.quit()
+    quit()
