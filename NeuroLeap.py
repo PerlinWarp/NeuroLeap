@@ -35,11 +35,14 @@ def get_points(controller):
 		Z.append(finger.tip_position.z)
 	return np.array([X, Z, Y])
 
-def get_rel_points(controller):
+def get_basis_points(controller):
 	'''
 	Returns points for a simple hand model.
 	Relative to the hand itself.
 	18 point model. Finger tips + Palm
+	This is the method reccomended from leap motion
+	to get points from the hands point of refrence.
+	It seems to loose a dimention.
 	'''
 	frame = controller.frame()
 	hand = frame.hands.rightmost
@@ -244,6 +247,47 @@ def get_bone_points(controller):
 	return np.array([X, Z, Y])
 
 def get_rel_bone_points(controller):
+	frame = controller.frame()
+	hand = frame.hands.rightmost
+	if not hand.is_valid:
+		return None
+	fingers = hand.fingers
+
+	X = []
+	Y = []
+	Z = []
+
+	palm_x = hand.palm_position.x
+	palm_y = hand.palm_position.y
+	palm_z = hand.palm_position.z
+
+	# Add the position of the palms, of course we dont need to add them
+	# They should always be 0
+	X.append(-1 *(hand.palm_position.x - palm_x))
+	Y.append(hand.palm_position.y - palm_y)
+	Z.append(hand.palm_position.z - palm_z)
+
+	# Add wrist position
+	X.append(-1 * (hand.wrist_position.x - palm_x))
+	Y.append(hand.wrist_position.y - palm_y)
+	Z.append(hand.wrist_position.z - palm_z)
+
+	# Add fingers
+	for finger in fingers:
+		for joint in range(0,4):
+			'''
+			0 = JOINT_MCP – The metacarpophalangeal joint, or knuckle, of the finger.
+			1 = JOINT_PIP – The proximal interphalangeal joint of the finger. This joint is the middle joint of a finger.
+			2 = JOINT_DIP – The distal interphalangeal joint of the finger. This joint is closest to the tip.
+			3 = JOINT_TIP – The tip of the finger.
+			'''
+			X.append(-1 * (finger.joint_position(joint)[0] - palm_x))
+			Y.append(finger.joint_position(joint)[1] - palm_y)
+			Z.append(finger.joint_position(joint)[2] - palm_z)
+
+	return np.array([X, Z, Y])
+
+def get_basis_bone_points(controller):
 	'''
 	Gets points for a full hand model. (22 points, 66 vars)
 	Relative to the hand itself.

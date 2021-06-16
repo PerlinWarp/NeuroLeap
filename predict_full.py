@@ -40,7 +40,7 @@ controller.set_policy_flags(Leap.Controller.POLICY_BACKGROUND_FRAMES)
 if __name__ == '__main__':
 	try:
 		# Load the keras model
-		model_name = "NNNonRel-60secs-FULL-StanScaled"
+		model_name = "NNRel-60secs-FULL-StanScaled"
 		model = load_model(f"models/{model_name}.h5")
 
 		input_scaler = joblib.load(f'models/{model_name}-EMG.gz')
@@ -96,7 +96,7 @@ if __name__ == '__main__':
 
 			# Leap Motion Plotting
 			## Note this should be done in another thread or weird things happen.
-			points = nl.get_bone_points(controller)
+			points = nl.get_rel_bone_points(controller)
 			nl.reset_plot(ax2)
 			if (points is not None):
 				truth = ax2.scatter(points[0], points[1], points[2], s=10, alpha=1)

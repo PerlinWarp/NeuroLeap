@@ -1,8 +1,8 @@
 # Simplist data recording + Plotting
 '''
 The simplict hand tracking model:
-	Only record the finger tips. / finger-palm angle etc etc etc 
-	Only records a sample from the leap when there is a new myo sample. 
+	Only record the finger tips. / finger-palm angle etc etc etc
+	Only records a sample from the leap when there is a new myo sample.
 	Use the 50Hz Myo mode.
 '''
 import time
@@ -35,13 +35,14 @@ def data_worker(shared_leap_arr=None, seconds=15, file_name="data_gather.csv", r
 
 	def add_to_queue(emg, movement):
 		'''
-		Add myo data to myo_data, 
+		Add myo data to myo_data,
 		add leap data to leap_data and shared_leap_arr for plots in other thread
 		'''
 		myo_data.append(emg)
 		if (full_hand):
-			points = nl.get_bone_points(controller)
+			points = nl.get_rel_bone_points(controller)
 		else:
+			#TODO Impliment get_rel_points
 			points = nl.get_points(controller)
 		if (points is not None):
 			ld = points.flatten()
