@@ -40,7 +40,7 @@ controller.set_policy_flags(Leap.Controller.POLICY_BACKGROUND_FRAMES)
 if __name__ == '__main__':
 	try:
 		# Load the keras model
-		model_name = "NNRel-60secs-FULL-StanScaled"
+		model_name = "NNRel-60secs-FULL-StanScaled17th"
 		model = load_model(f"models/{model_name}.h5")
 
 		input_scaler = joblib.load(f'models/{model_name}-EMG.gz')

@@ -5,3 +5,4 @@ __pycache__/*
 
 Notebooks/.ipynb_checkpoints/*
 Notebooks/Archive/.ipynb_checkpoints/*
+*/.ipynb_checkpoints/*

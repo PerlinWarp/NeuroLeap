@@ -11,13 +11,13 @@ import NeuroLeap as nl
 
 # Configs
 FULL_HAND = True
-SECONDS = 30
+SECONDS = 60
 ''' RAW is the Myo preprocessing setting.
 	If RAW is False, we get undocumented filtered 50Hz. (0x01)
 	If RAW is true, we get unrectified 200Hz data between -128 and 127.
 '''
 RAW = False
-CSV_NAME = "dataset-test"
+CSV_NAME = "post_uni_2"
 
 ops = ""
 if (RAW): ops += "raw-"
@@ -46,7 +46,8 @@ if __name__ == '__main__':
 	patches = ax.scatter(points[0], points[1], points[2], s=20, alpha=1)
 
 	def get_leap_points():
-		if(leap_arr[0] != 0):
+		# TODO Use flags to tell main thread when leap is ready
+		if(leap_arr[11] != 0):
 			leap_data = np.frombuffer(leap_arr.get_obj())
 			leap_data = leap_data.reshape(3,NUM_POINTS//3)
 			return leap_data
