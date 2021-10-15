@@ -1,10 +1,12 @@
-import Leap
+import math
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib import animation
 from mpl_toolkits.mplot3d import Axes3D
 import mpl_toolkits.mplot3d as plt3d
+
+from resources.Windows import Leap
 
 # Leap Motion Hand Animation
 finger_bones = ['metacarpals', 'proximal', 'intermediate', 'distal']
@@ -253,24 +255,28 @@ def get_rel_bone_points(controller):
 		return None
 	fingers = hand.fingers
 
+	# Get hand transform
+	hand_x_basis = hand.basis.x_basis
+	hand_y_basis = hand.basis.y_basis
+	hand_z_basis = hand.basis.z_basis
+	hand_origin = hand.palm_position
+	hand_transform = Leap.Matrix(hand_x_basis, hand_y_basis, hand_z_basis, hand_origin)
+	hand_transform = hand_transform.rigid_inverse()
+
 	X = []
 	Y = []
 	Z = []
 
-	palm_x = hand.palm_position.x
-	palm_y = hand.palm_position.y
-	palm_z = hand.palm_position.z
-
-	# Add the position of the palms, of course we dont need to add them
-	# They should always be 0
-	X.append(-1 *(hand.palm_position.x - palm_x))
-	Y.append(hand.palm_position.y - palm_y)
-	Z.append(hand.palm_position.z - palm_z)
+	palm_pos = hand_transform.transform_point(hand.palm_position)
+	X.append(palm_pos.x)
+	Y.append(palm_pos.y)
+	Z.append(palm_pos.z)
 
 	# Add wrist position
-	X.append(-1 * (hand.wrist_position.x - palm_x))
-	Y.append(hand.wrist_position.y - palm_y)
-	Z.append(hand.wrist_position.z - palm_z)
+	wrist_pos = hand_transform.transform_point(hand.wrist_position)
+	X.append(wrist_pos.x)
+	Y.append(wrist_pos.y)
+	Z.append(wrist_pos.z)
 
 	# Add fingers
 	for finger in fingers:
@@ -281,9 +287,11 @@ def get_rel_bone_points(controller):
 			2 = JOINT_DIP – The distal interphalangeal joint of the finger. This joint is closest to the tip.
 			3 = JOINT_TIP – The tip of the finger.
 			'''
-			X.append(-1 * (finger.joint_position(joint)[0] - palm_x))
-			Y.append(finger.joint_position(joint)[1] - palm_y)
-			Z.append(finger.joint_position(joint)[2] - palm_z)
+			bone = finger.bone(joint)
+			transformed_position = hand_transform.transform_point(bone.prev_joint)
+			X.append(-1 * transformed_position[0])
+			Y.append(transformed_position[1])
+			Z.append(transformed_position[2])
 
 	return np.array([X, Z, Y])
 
@@ -344,13 +352,139 @@ def get_basis_bone_points(controller):
 
 	return np.array([X, Z, Y])
 
+def get_rotation_matrix(bone):
+	basis = bone.basis
+	x_basis = basis.x_basis
+	y_basis = basis.y_basis
+	z_basis = basis.z_basis
+	matrix = Leap.Matrix(x_basis, y_basis, z_basis).to_array_3x3()
+	matrix = np.reshape(matrix, newshape=(3, 3))
+	return matrix
+
+def get_angles_from_rot(rot_mat):
+	"""
+	Function from LearnOpenCV, Satya Mallick:
+	https://www.learnopencv.com/rotation-matrix-to-euler-angles/
+	https://github.com/spmallick/learnopencv/blob/master/RotationMatrixToEulerAngles/rotm2euler.py
+	"""
+	sy = math.sqrt(rot_mat[0, 0] * rot_mat[0, 0] + rot_mat[1, 0] * rot_mat[1, 0])
+	singular = sy < 1e-6
+
+	if not singular:
+		x = math.atan2(rot_mat[2, 1], rot_mat[2, 2])
+		y = math.atan2(-rot_mat[2, 0], sy)
+		z = math.atan2(rot_mat[1, 0], rot_mat[0, 0])
+	else:
+		x = math.atan2(-rot_mat[1, 2], rot_mat[1, 1])
+		y = math.atan2(-rot_mat[2, 0], sy)
+		z = 0
+
+	return [x,y,z]
+
 def get_bone_angles(controller):
 	frame = controller.frame()
 	hand = frame.hands.rightmost
 	if not hand.is_valid: return None
+	fingers = hand.fingers
 
+	angles = []
+	for finger in fingers:
+		for b in range(0,4):
+			last_bone = finger.bone(b-1) if b != 0 else hand
+			bone = finger.bone(b)
+			# Generate rotation matrices from basis vectors
+			last_bone_mat = get_rotation_matrix(last_bone)
+			bone_mat = get_rotation_matrix(bone)
+			# Get rotation matrix between bones, change of basis
+			rot_mat = np.matmul(bone_mat, last_bone_mat.transpose())
+			# Generate euler angles from rotation matrix
+			angles.append(get_angles_from_rot(rot_mat))
 
+	return angles
 
+# return an array of 16 core angles
+def get_bone_core_angles(controller):
+	frame = controller.frame()
+	hand = frame.hands.rightmost
+	if not hand.is_valid: return None
+	fingers = hand.fingers
+
+	angles = []
+	for finger in fingers:
+		for b in range(0,4):
+			last_bone = finger.bone(b-1) if b != 0 else hand
+			bone = finger.bone(b)
+			# Generate rotation matrices from basis vectors
+			last_bone_mat = get_rotation_matrix(last_bone)
+			bone_mat = get_rotation_matrix(bone)
+			# Get rotation matrix between bones, change of basis
+			rot_mat = np.matmul(bone_mat, last_bone_mat.transpose())
+			# Generate euler angles from rotation matrix
+			bone_angles = get_angles_from_rot(rot_mat)
+
+			if finger.type == Leap.Finger_TYPE_THUMB:
+				if b == 0 or b == 1: # tmc or mcp
+					angles.append(bone_angles[0]) # fe
+					angles.append(bone_angles[1]) # aa
+			else:
+				if b == 1: # mcp
+					angles.append(bone_angles[0]) # fe
+					angles.append(bone_angles[1]) # aa
+				elif b == 2: # pip
+					angles.append(bone_angles[0])
+
+	return angles
+
+# return an array of angles for the whole hand from 16 core angles
+# fe: flexion-extension ; aa: adduction-abduction
+# rules in degrees:
+# 	0 <= pip <= 110
+# 	-15 <= mcp.aa <= 15
+# 	0 <= mcp.fe <= .5*pip
+def get_all_bone_angles_from_core(core_angles):
+	thumb_tmc_fe = core_angles[0]
+	thumb_tmc_aa = core_angles[1]
+	thumb_mcp_fe = core_angles[2]
+	thumb_mcp_aa = core_angles[3]
+	index_mcp_fe = core_angles[4]
+	index_mcp_aa = core_angles[5]
+	index_pip = core_angles[6]
+	middle_mcp_fe = core_angles[7]
+	middle_mcp_aa = core_angles[8]
+	middle_pip = core_angles[9]
+	ring_mcp_fe = core_angles[10]
+	ring_mcp_aa = core_angles[11]
+	ring_pip = core_angles[12]
+	little_mcp_fe = core_angles[13]
+	little_mcp_aa = core_angles[14]
+	little_pip = core_angles[15]
+
+	return [
+		[0, 0, 0],
+		[thumb_tmc_fe, thumb_tmc_aa, 0],
+		[thumb_mcp_fe, thumb_mcp_aa, 0],
+		[.5*thumb_mcp_fe, 0, 0],
+
+		[0, 0, 0],
+		[index_mcp_fe, index_mcp_aa, 0],
+		[index_pip, 0, 0],
+		[(2/3)*index_pip, 0, 0],
+
+		[0, 0, 0],
+		[middle_mcp_fe, middle_mcp_aa, 0],
+		[middle_pip, 0, 0],
+		[(2/3)*middle_pip, 0, 0],
+
+		[0, 0, 0],
+		[ring_mcp_fe, ring_mcp_aa, 0],
+		[ring_pip, 0, 0],
+		[(2/3)*ring_pip, 0, 0],
+
+		[0, 0, 0],
+		[little_mcp_fe, little_mcp_aa, 0],
+		[little_pip, 0, 0],
+		[(2/3)*little_pip, 0, 0]
+	]
 
 # Other Leap Funcs
 def save_points(points,name='points.csv'):
@@ -447,4 +581,22 @@ def data_to_bones_df(myo_data, leap_data):
 	df = myo_df.join(leap_df)
 	return df
 
+def data_to_angles_df(myo_data, leap_data):
+	'''
+	Takes myo and leap data, returns dataframe.
+	Assumes full hand model as 16 core angles
+	'''
+	myo_cols = ["Channel_1", "Channel_2", "Channel_3", "Channel_4", "Channel_5", "Channel_6", "Channel_7", "Channel_8"]
+	leap_bone_columns = [
+		'Thumb_TMC_fe', 'Thumb_tmc_aa', 'Thumb_mcp_fe', 'Thumb_mcp_aa',
+		'Index_mcp_fe', 'Index_mcp_aa', 'Index_pip',
+		'Middle_mcp_fe', 'Middle_mcp_aa', 'Middle_pip',
+		'Ring_mcp_fe', 'Ring_mcp_aa', 'Ring_pip',
+		'Little_mcp_fe', 'Little_mcp_aa', 'Little_pip'
+		]
 
+	myo_df = pd.DataFrame(myo_data, columns=myo_cols)
+	leap_df = pd.DataFrame(leap_data, columns=leap_bone_columns)
+
+	df = myo_df.join(leap_df)
+	return df

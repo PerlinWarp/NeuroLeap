@@ -11,7 +11,7 @@ import multiprocessing
 import numpy as np
 import pandas as pd
 
-import Leap
+from resources.Windows import Leap
 from myo_raw import MyoRaw
 import NeuroLeap as nl
 
@@ -22,7 +22,7 @@ def data_worker(shared_leap_arr=None, seconds=15, file_name="data_gather.csv", r
 	leap_data = []
 
 	controller = Leap.Controller()
-	controller.set_policy_flags(Leap.Controller.POLICY_BACKGROUND_FRAMES)
+	controller.set_policy_flags(Leap.Controller.POLICY_OPTIMIZE_HMD)
 
 	# ------------ Myo Setup ---------------
 	if (raw):

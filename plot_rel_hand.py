@@ -1,4 +1,4 @@
-import Leap
+#import Leap
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import animation
@@ -6,10 +6,11 @@ from mpl_toolkits.mplot3d import Axes3D
 import mpl_toolkits.mplot3d as plt3d
 
 import NeuroLeap as nl
+from resources.Windows import Leap
 
 # Leap Motion Controller Setup
 controller = Leap.Controller()
-controller.set_policy_flags(Leap.Controller.POLICY_BACKGROUND_FRAMES)
+controller.set_policy_flags(Leap.Controller.POLICY_OPTIMIZE_HMD)
 NUM_POINTS = 22
 
 SAVE = True
